@@ -1,51 +1,41 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Python IDE - 后端系统</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 40px; text-align: center; }
-        .login-form { margin: 20px auto; max-width: 300px; }
-        input { margin: 5px; padding: 8px; width: 100%; }
-        button { padding: 10px 20px; margin: 10px; }
-    </style>
+  <meta charset="utf-8">
+  <title>Python IDE 后端系统</title>
+  <style>
+    body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial; padding:40px; background:#f3f6fb; color:#112; }
+    .card { background:white; padding:20px; border-radius:12px; max-width:560px; margin:auto; box-shadow:0 6px 18px rgba(15,23,42,0.06); }
+    input { padding:10px 12px; border-radius:8px; border:1px solid #e6eef6; width:100%; margin-top:8px; box-sizing:border-box; }
+    button { padding:10px 14px; border-radius:8px; border:none; background:#2563eb; color:white; margin-top:12px; cursor:pointer; width:100%; }
+  </style>
 </head>
 <body>
-    <h1>Python IDE 后端系统</h1>
-    <p>这是一个用于代码提交和管理的后端系统</p>
-
-    <div class="login-form">
-        <h3>管理员登录</h3>
-        <input type="text" id="username" placeholder="用户名" value="admin">
-        <input type="password" id="password" placeholder="密码" value="admin123">
-        <button onclick="login()">登录</button>
+  <div class="card">
+    <h2>Python IDE 后端系统</h2>
+    <p>用于代码提交与管理员管理。请用管理员账号登录以访问管理面板。</p>
+    <div>
+      <label>用户名</label>
+      <input id="username" value="mc">
+      <label>密码</label>
+      <input id="password" type="password" value="mc">
+      <button onclick="login()">登录并进入管理员面板</button>
     </div>
-
-    <p>普通用户请使用 Python IDE 客户端进行登录和操作</p>
-
-    <script>
-        async function login() {
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-
-            const response = await fetch('/api/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password })
-            });
-
-            const data = await response.json();
-
-            if (data.success) {
-                localStorage.setItem('token', data.token);
-                if (data.user.is_admin) {
-                    window.location.href = '/admin';
-                } else {
-                    alert('普通用户请使用客户端操作');
-                }
-            } else {
-                alert('登录失败: ' + data.message);
-            }
-        }
-    </script>
+  </div>
+<script>
+async function login() {
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+    const r = await fetch('/api/login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ username, password }) });
+    const d = await r.json();
+    if (d.success) {
+        localStorage.setItem('token', d.token);
+        alert('登录成功，跳转管理员面板');
+        location.href = '/admin';
+    } else {
+        alert('登录失败: ' + (d.message || ''));
+    }
+}
+</script>
 </body>
 </html>
