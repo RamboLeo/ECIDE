@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Python IDE - 管理员面板</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .section { margin-bottom: 30px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 10px; border: 1px solid #ddd; text-align: left; }
+        th { background-color: #f5f5f5; }
+        .btn { padding: 5px 10px; margin: 2px; cursor: pointer; }
+        .btn-danger { background-color: #dc3545; color: white; border: none; }
+    </style>
+</head>
+<body>
+    <h1>Python IDE 管理员面板</h1>
+
+    <div class="section">
+        <h2>用户管理</h2>
+        <div id="users-list"></div>
+    </div>
+
+    <div class="section">
+        <h2>文件管理</h2>
+        <div id="files-list"></div>
+    </div>
+
+    <script>
+        const API_BASE = '/api';
+        let token = localStorage.getItem('token');
+
+        if (!token) {
+            alert('请先登录');
+            window.location.href = '/';
+        }
+
+        async function fetchWithAuth(url, options = {}) {
+            options.headers = {
+                ...options.headers,
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            };
+            const response = await fetch(url, options);
+            if (response.status === 401) {
+                localStorage.removeItem('token');
+                alert('登录已过期，请重新登录');
+                window.location.href = '/';
+            }
+            return response;
+        }
+
+        async function loadUsers() {
+            const response = await fetchWithAuth(`${API_BASE}/admin/users`);
+            const data = await response.json();
+
+            if (data.success) {
+                const usersHtml = `
+                    <table>
+                        <tr>
+                            <th>ID</th>
+                            <th>用户名</th>
+                            <th>管理员</th>
+                            <th>注册时间</th>
+                            <th>项目数</th>
+                            <th>文件数</th>
+                            <th>操作</th>
+                        </tr>
+                        ${data.users.map(user => `
+                            <tr>
+                                <td>${user.id}</td>
+                                <td>${user.username}</td>
+                                <td>${user.is_admin ? '是' : '否'}</td>
+                                <td>${new Date(user.created_at).toLocaleString()}</td>
+                                <td>${user.project_count}</td>
+                                <td>${user.file_count}</td>
+                                <td>
+                                    ${!user.is_admin ? `
+                                        <button class="btn btn-danger" onclick="deleteUser(${user.id})">
+                                            删除
+                                        </button>
+                                    ` : ''}
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </table>
+                `;
+                document.getElementById('users-list').innerHTML = usersHtml;
+            }
+        }
+
+        async function loadFiles() {
+            const response = await fetchWithAuth(`${API_BASE}/admin/files`);
+            const data = await response.json();
+
+            if (data.success) {
+                const filesHtml = `
+                    <table>
+                        <tr>
+                            <th>ID</th>
+                            <th>文件名</th>
+                            <th>用户</th>
+                            <th>项目</th>
+                            <th>创建时间</th>
+                            <th>更新时间</th>
+                            <th>操作</th>
+                        </tr>
+                        ${data.files.map(file => `
+                            <tr>
+                                <td>${file.id}</td>
+                                <td>${file.filename}</td>
+                                <td>${file.username} (ID: ${file.user_id})</td>
+                                <td>${file.project_name}</td>
+                                <td>${new Date(file.created_at).toLocaleString()}</td>
+                                <td>${new Date(file.updated_at).toLocaleString()}</td>
+                                <td>
+                                    <button class="btn btn-danger" onclick="deleteFile(${file.id})">
+                                        删除
+                                    </button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </table>
+                `;
+                document.getElementById('files-list').innerHTML = filesHtml;
+            }
+        }
+
+        async function deleteUser(userId) {
+            if (confirm('确定要删除这个用户吗？这将删除该用户的所有项目和文件！')) {
+                const response = await fetchWithAuth(`${API_BASE}/admin/user/${userId}`, {
+                    method: 'DELETE'
+                });
+                const data = await response.json();
+                alert(data.message);
+                if (data.success) {
+                    loadUsers();
+                    loadFiles();
+                }
+            }
+        }
+
+        async function deleteFile(fileId) {
+            if (confirm('确定要删除这个文件吗？')) {
+                const response = await fetchWithAuth(`${API_BASE}/admin/file/${fileId}`, {
+                    method: 'DELETE'
+                });
+                const data = await response.json();
+                alert(data.message);
+                if (data.success) {
+                    loadFiles();
+                }
+            }
+        }
+
+        // 初始化加载数据
+        loadUsers();
+        loadFiles();
+    </script>
+</body>
+</html>
