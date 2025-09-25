@@ -48,15 +48,23 @@ class PythonIDEClient:
         # 项目路径标签
         self.project_label = ttk.Label(toolbar_frame, text="未选择项目", foreground="blue")
         self.project_label.pack(side=tk.LEFT, padx=(20, 0))
-        
-        # 登录按钮
-        self.login_btn = ttk.Button(toolbar_frame, text="登录", command=self.show_login_dialog)
-        self.login_btn.pack(side=tk.RIGHT, padx=(5, 0))
-        
+
         # 注册按钮
         self.register_btn = ttk.Button(toolbar_frame, text="注册", command=self.show_register_dialog)
         self.register_btn.pack(side=tk.RIGHT)
+
+        # 登录按钮
+        self.login_btn = ttk.Button(toolbar_frame, text="登录", command=self.show_login_dialog)
+        self.login_btn.pack(side=tk.RIGHT, padx=(0, 0))
+
+        # 管理按钮
+        self.login_btn = ttk.Button(toolbar_frame, text="管理登录", command=self.show_login_dialog)
+        self.login_btn.pack(side=tk.RIGHT, padx=(0, 0))
         
+
+
+
+
         # 主要内容区域 - 使用PanedWindow分割
         main_paned = ttk.PanedWindow(main_frame, orient=tk.HORIZONTAL)
         main_paned.pack(fill=tk.BOTH, expand=True)
@@ -92,9 +100,9 @@ class PythonIDEClient:
         self.file_label = ttk.Label(editor_toolbar, text="未打开文件")
         self.file_label.pack(side=tk.LEFT)
         
-        ttk.Button(editor_toolbar, text="保存", command=self.save_file).pack(side=tk.RIGHT, padx=(5, 0))
-        ttk.Button(editor_toolbar, text="运行", command=self.run_code).pack(side=tk.RIGHT, padx=(5, 0))
-        ttk.Button(editor_toolbar, text="提交到服务器", command=self.submit_code).pack(side=tk.RIGHT, padx=(5, 0))
+        ttk.Button(editor_toolbar, text="保存", command=self.save_file).pack(side=tk.RIGHT, padx=(0, 0))
+        ttk.Button(editor_toolbar, text="运行", command=self.run_code).pack(side=tk.RIGHT, padx=(0, 0))
+        ttk.Button(editor_toolbar, text="提交到服务器", command=self.submit_code).pack(side=tk.RIGHT, padx=(0, 0))
         
         # 代码编辑器
         self.code_editor = scrolledtext.ScrolledText(editor_frame, wrap=tk.NONE, font=("Consolas", 11))
@@ -477,15 +485,15 @@ class PythonIDEClient:
         # 居中显示
         dialog.geometry("+%d+%d" % (self.root.winfo_rootx() + 50, self.root.winfo_rooty() + 50))
         
-        ttk.Label(dialog, text="用户名:").pack(pady=10)
+        ttk.Label(dialog, text="用户名:").pack(pady=20)
         username_entry = ttk.Entry(dialog, width=30)
         username_entry.pack(pady=5)
         
-        ttk.Label(dialog, text="密码:").pack(pady=(10, 0))
+        ttk.Label(dialog, text="密码:").pack(pady=(20, 0))
         password_entry = ttk.Entry(dialog, width=30, show="*")
         password_entry.pack(pady=5)
         
-        ttk.Label(dialog, text="确认密码:").pack(pady=(10, 0))
+        ttk.Label(dialog, text="确认密码:").pack(pady=(20, 0))
         confirm_password_entry = ttk.Entry(dialog, width=30, show="*")
         confirm_password_entry.pack(pady=5)
         
