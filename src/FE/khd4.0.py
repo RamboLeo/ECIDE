@@ -14,7 +14,7 @@ class PythonIDEClient:
     def __init__(self, root):
         self.root = root
         self.root.title("EC Python IDE 客户端 v2.0")
-        self.root.geometry("1400x900")
+        self.root.geometry("1300x600")
 
         # 服务器配置
         self.server_url = "http://localhost:8081/api"
