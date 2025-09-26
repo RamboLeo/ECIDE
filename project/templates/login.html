@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录 - Python IDE 管理系统</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/animate.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-card animate__animated animate__zoomIn">
+            <div class="login-header">
+                <i class="fas fa-code login-logo"></i>
+                <h1>Python IDE 管理系统</h1>
+                <p>请登录以继续访问</p>
+            </div>
+
+            <form id="login-form" class="login-form">
+                <div class="form-group">
+                    <label for="username">用户名</label>
+                    <div class="input-with-icon">
+                        <i class="fas fa-user"></i>
+                        <input type="text" id="username" name="username" placeholder="请输入用户名" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">密码</label>
+                    <div class="input-with-icon">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" id="password" name="password" placeholder="请输入密码" required>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-login">
+                    <i class="fas fa-sign-in-alt"></i> 登录
+                </button>
+            </form>
+
+            <div class="login-footer">
+                <p>提示: 管理员账号 admin/admin123 | 用户账号 user1/password1</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="loading" class="loading">
+        <div class="spinner"></div>
+        <p>登录中...</p>
+    </div>
+
+    <script>
+        document.getElementById('login-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            if (!username || !password) {
+                alert('请输入用户名和密码');
+                return;
+            }
+
+            try {
+                document.getElementById('loading').style.display = 'flex';
+
+                const formData = new FormData();
+                formData.append('username', username);
+                formData.append('password', password);
+
+                const response = await fetch('/login', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    window.location.href = '/admin';
+                } else {
+                    alert('登录失败: ' + data.message);
+                }
+            } catch (error) {
+                console.error('登录错误:', error);
+                alert('登录失败，请检查网络连接');
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        });
+
+        // 添加额外的样式
+        const style = document.createElement('style');
+        style.textContent = `
+            .login-container {
+                min-height: 100vh;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                padding: 20px;
+            }
+
+            .login-card {
+                background: rgba(255, 255, 255, 0.95);
+                backdrop-filter: blur(10px);
+                padding: 40px;
+                border-radius: 20px;
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+                width: 100%;
+                max-width: 400px;
+                text-align: center;
+            }
+
+            .login-header {
+                margin-bottom: 30px;
+            }
+
+            .login-logo {
+                font-size: 48px;
+                color: #667eea;
+                margin-bottom: 16px;
+            }
+
+            .login-header h1 {
+                color: #2d3748;
+                margin-bottom: 8px;
+                font-size: 24px;
+            }
+
+            .login-header p {
+                color: #718096;
+                font-size: 14px;
+            }
+
+            .login-form {
+                display: flex;
+                flex-direction: column;
+                gap: 20px;
+            }
+
+            .input-with-icon {
+                position: relative;
+            }
+
+            .input-with-icon i {
+                position: absolute;
+                left: 16px;
+                top: 50%;
+                transform: translateY(-50%);
+                color: #a0aec0;
+            }
+
+            .input-with-icon input {
+                padding-left: 45px;
+                width: 100%;
+            }
+
+            .btn-login {
+                width: 100%;
+                padding: 16px;
+                font-size: 16px;
+                margin-top: 10px;
+            }
+
+            .login-footer {
+                margin-top: 30px;
+                padding-top: 20px;
+                border-top: 1px solid #e2e8f0;
+            }
+
+            .login-footer p {
+                color: #a0aec0;
+                font-size: 12px;
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>

@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>代码编辑器 - {{ submission.filename }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.34.1/min/vs/loader.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="logo">
+                <i class="fas fa-code"></i>
+                <span>代码编辑器 - {{ submission.filename }}</span>
+            </div>
+            <div class="user-info">
+                <button class="btn btn-secondary" onclick="window.history.back()">
+                    <i class="fas fa-arrow-left"></i> 返回
+                </button>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <div class="card">
+                <div class="card-header">
+                    <h2>
+                        <i class="fas fa-file-code"></i>
+                        {{ submission.filename }}
+                        <small>(项目: {{ submission.project_name }}, 用户: {{ submission.username }})</small>
+                    </h2>
+                    <div class="action-buttons">
+                        <button class="btn btn-success" onclick="saveCode()" id="save-btn">
+                            <i class="fas fa-save"></i> 保存
+                        </button>
+                        <button class="btn btn-primary" onclick="downloadCode()">
+                            <i class="fas fa-download"></i> 下载
+                        </button>
+                    </div>
+                </div>
+
+                <div id="editor-container" style="height: 600px; border: 1px solid #e2e8f0; border-radius: 8px;"></div>
+
+                <div class="file-info" style="margin-top: 16px; color: #718096; font-size: 14px;">
+                    <p>最后修改: {{ submission.submission_time }} | 文件大小: {{ (submission.file_size / 1024).toFixed(2) }} KB</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="loading" class="loading">
+        <div class="spinner"></div>
+        <p>加载编辑器中...</p>
+    </div>
+
+    <script>
+        const submissionId = {{ submission.id }};
+        const isViewMode = new URLSearchParams(window.location.search).get('mode') === 'view';
+        let editor;
+
+        // 初始化Monaco编辑器
+        require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.34.1/min/vs' }});
+        require(['vs/editor/editor.main'], function() {
+            // 获取文件扩展名以确定语言
+            const extension = '{{ submission.filename }}'.split('.').pop();
+            const languageMap = {
+                'py': 'python',
+                'js': 'javascript',
+                'html': 'html',
+                'css': 'css',
+                'java': 'java',
+                'c': 'c',
+                'cpp': 'cpp',
+                'json': 'json'
+            };
+
+            const language = languageMap[extension] || 'plaintext';
+
+            // 创建编辑器
+            editor = monaco.editor.create(document.getElementById('editor-container'), {
+                value: '', // 初始值将在加载内容后设置
+                language: language,
+                theme: 'vs-light',
+                automaticLayout: true,
+                readOnly: isViewMode,
+                minimap: { enabled: true },
+                scrollBeyondLastLine: false,
+                fontSize: 14,
+                lineNumbers: 'on',
+                roundedSelection: true,
+                scrollbar: {
+                    vertical: 'auto',
+                    horizontal: 'auto'
+                }
+            });
+
+            // 加载文件内容
+            loadFileContent();
+        });
+
+        // 加载文件内容
+        async function loadFileContent() {
+            try {
+                showLoading();
+
+                const response = await fetch(`/api/code/${submissionId}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    editor.setValue(data.content);
+
+                    // 如果是查看模式，禁用保存按钮
+                    if (isViewMode) {
+                        document.getElementById('save-btn').disabled = true;
+                        document.getElementById('save-btn').classList.add('btn-secondary');
+                        document.getElementById('save-btn').classList.remove('btn-success');
+                    }
+                } else {
+                    alert('加载文件失败: ' + data.message);
+                }
+            } catch (error) {
+                console.error('加载文件错误:', error);
+                alert('加载文件失败，请检查网络连接');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // 保存代码
+        async function saveCode() {
+            try {
+                showLoading();
+
+                const content = editor.getValue();
+
+                const response = await fetch('/api/save', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        submission_id: submissionId,
+                        content: content
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    alert('文件保存成功！');
+                } else {
+                    alert('保存失败: ' + data.message);
+                }
+            } catch (error) {
+                console.error('保存错误:', error);
+                alert('保存失败，请检查网络连接');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // 下载代码
+        function downloadCode() {
+            window.location.href = `/api/download/${submissionId}`;
+        }
+
+        // 显示加载动画
+        function showLoading() {
+            document.getElementById('loading').style.display = 'flex';
+        }
+
+        // 隐藏加载动画
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
