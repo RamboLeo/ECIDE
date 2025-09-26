@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python IDE 管理中心</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            padding-top: 20px;
+        }
+        .card {
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,.1);
+        }
+        .table-container {
+            overflow-x: auto;
+        }
+        .user-actions button {
+            margin-right: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="row mb-4">
+            <div class="col">
+                <h1 class="text-center"><i class="bi bi-code-slash"></i> Python IDE 管理中心</h1>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5><i class="bi bi-person-plus"></i> 登录</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="loginSection">
+                            <div class="mb-3">
+                                <label class="form-label">用户名</label>
+                                <input type="text" class="form-control" id="loginUsername">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">密码</label>
+                                <input type="password" class="form-control" id="loginPassword">
+                            </div>
+                            <button class="btn btn-primary w-100" onclick="login()">登录</button>
+                        </div>
+                        <div id="userInfo" class="d-none">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h5 id="usernameDisplay"></h5>
+                                    <div class="badge bg-success" id="userRole">管理员</div>
+                                </div>
+                                <button class="btn btn-outline-danger" onclick="logout()">退出登录</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 mb-4">
+                <div class="card d-none" id="createUserCard">
+                    <div class="card-header bg-success text-white">
+                        <h5><i class="bi bi-person-plus"></i> 创建新用户</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">用户名</label>
+                            <input type="text" class="form-control" id="newUsername">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">密码</label>
+                            <input type="password" class="form-control" id="newPassword">
+                        </div>
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="isAdmin">
+                            <label class="form-check-label">设为管理员</label>
+                        </div>
+                        <button class="btn btn-success w-100" onclick="createUser()">创建用户</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card d-none" id="usersTableCard">
+            <div class="card-header bg-dark text-white">
+                <h5><i class="bi bi-people"></i> 用户管理</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-container">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>用户名</th>
+                                <th>管理员</th>
+                                <th>状态</th>
+                                <th>创建时间</th>
+                                <th>最后登录</th>
+                                <th>提交数</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTableBody">
+                            <!-- 用户数据将通过JS动态填充 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let authToken = null;
+        let currentUser = null;
+
+        // DOM元素
+        const loginSection = document.getElementById('loginSection');
+        const userInfo = document.getElementById('userInfo');
+        const usernameDisplay = document.getElementById('usernameDisplay');
+        const userRole = document.getElementById('userRole');
+        const usersTableCard = document.getElementById('usersTableCard');
+        const createUserCard = document.getElementById('createUserCard');
+        const usersTableBody = document.getElementById('usersTableBody');
+
+        // 登录函数
+        async function login() {
+            const username = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
+
+            if (!username || !password) {
+                alert('请输入用户名和密码!');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: username,
+                        password: password
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    authToken = data.token;
+                    currentUser = data.user;
+
+                    // 更新UI
+                    loginSection.classList.add('d-none');
+                    userInfo.classList.remove('d-none');
+                    usernameDisplay.textContent = currentUser.username;
+                    userRole.textContent = currentUser.is_admin ? '管理员' : '普通用户';
+
+                    // 只有管理员才能访问用户管理
+                    if (currentUser.is_admin) {
+                        createUserCard.classList.remove('d-none');
+                        usersTableCard.classList.remove('d-none');
+                        loadUsers();
+                    }
+                } else {
+                    alert('登录失败: ' + data.message);
+                }
+            } catch (error) {
+                console.error('登录错误:', error);
+                alert('登录过程中发生错误!');
+            }
+        }
+
+        // 退出登录
+        function logout() {
+            authToken = null;
+            currentUser = null;
+
+            // 重置UI
+            userInfo.classList.add('d-none');
+            loginSection.classList.remove('d-none');
+            usersTableCard.classList.add('d-none');
+            createUserCard.classList.add('d-none');
+
+            // 清空输入
+            document.getElementById('loginUsername').value = '';
+            document.getElementById('loginPassword').value = '';
+        }
+
+        // 加载用户列表
+        async function loadUsers() {
+            try {
+                const response = await fetch('/api/users', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-access-token': authToken
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    renderUsersTable(data.users);
+                } else {
+                    alert('加载用户失败: ' + data.message);
+                }
+            } catch (error) {
+                console.error('加载用户错误:', error);
+                alert('加载用户数据时发生错误!');
+            }
+        }
+
+        // 渲染用户表格
+        function renderUsersTable(users) {
+            usersTableBody.innerHTML = '';
+
+            users.forEach(user => {
+                const row = document.createElement('tr');
+
+                row.innerHTML = `
+                    <td>${user.id}</td>
+                    <td>${user.username}</td>
+                    <td>${user.is_admin ? '<i class="bi bi-check-circle text-success"></i>' : '<i class="bi bi-x-circle text-secondary"></i>'}</td>
+                    <td>${user.active ? '<span class="badge bg-success">激活</span>' : '<span class="badge bg-secondary">禁用</span>'}</td>
+                    <td>${new Date(user.created_at).toLocaleString()}</td>
+                    <td>${user.last_login ? new Date(user.last_login).toLocaleString() : '从未登录'}</td>
+                    <td>${user.submission_count}</td>
+                    <td class="user-actions">
+                        <button class="btn btn-sm ${user.is_admin ? 'btn-warning' : 'btn-info'}"
+                                onclick="toggleAdmin(${user.id}, ${!user.is_admin})">
+                            ${user.is_admin ? '取消管理' : '设为管理'}
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteUser(${user.id})">
+                            <i class="bi bi-trash"></i> 删除
+                        </button>
+                    </td>
+                `;
+
+                usersTableBody.appendChild(row);
+            });
+        }
+
+        // 创建新用户
+        async function createUser() {
+            const username = document.getElementById('newUsername').value;
+            const password = document.getElementById('newPassword').value;
+            const isAdmin = document.getElementById('isAdmin').checked;
+
+            if (!username || !password) {
+                alert('请输入用户名和密码!');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/users/create', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-access-token': authToken
+                    },
+                    body: JSON.stringify({
+                        username,
+                        password,
+                        is_admin: isAdmin
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    alert('用户创建成功!');
+                    document.getElementById('newUsername').value = '';
+                    document.getElementById('newPassword').value = '';
+                    document.getElementById('isAdmin').checked = false;
+                    loadUsers();
+                } else {
+                    alert('创建用户失败: ' + data.message);
+                }
+            } catch (error) {
+                console.error('创建用户错误:', error);
+                alert('创建用户过程中发生错误!');
+            }
+        }
+
+        // 切换管理员状态
+        async function toggleAdmin(userId, makeAdmin) {
+            if (!confirm(`确定要${makeAdmin ? '设为' : '取消'}管理员吗?`)) return;
+
+            try {
+                const endpoint = makeAdmin
+                    ? `/api/users/${userId}/set_admin`
+                    : `/api/users/${userId}/remove_admin`;
+
+                const response = await fetch(endpoint, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-access-token': authToken
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    alert(data.message);
+                    loadUsers();
+                } else {
+                    alert('操作失败: ' + data.message);
+                }
+            } catch (error) {
+                console.error('管理员操作错误:', error);
+                alert('执行操作时发生错误!');
+            }
+        }
+
+        // 删除用户
+        async function deleteUser(userId) {
+            if (!confirm('确定要删除此用户吗? 此操作不可恢复!')) return;
+
+            try {
+                const response = await fetch(`/api/users/${userId}/delete`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-access-token': authToken
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    alert(data.message);
+                    loadUsers();
+                } else {
+                    alert('删除失败: ' + data.message);
+                }
+            } catch (error) {
+                console.error('删除用户错误:', error);
+                alert('删除用户过程中发生错误!');
+            }
+        }
+    </script>
+</body>
+</html>
