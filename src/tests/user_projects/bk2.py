@@ -5,7 +5,7 @@ import jwt
 import datetime
 import os
 from functools import wraps
-
+#管理员密码admin admin123
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key-change-in-production'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///python_ide.db'

@@ -58,7 +58,7 @@ class PythonIDEClient:
         self.login_btn.pack(side=tk.RIGHT, padx=(0, 0))
 
         # 管理按钮
-        self.login_btn = ttk.Button(toolbar_frame, text="管理登录", command=self.show_login_dialog)
+        self.login_btn = ttk.Button(toolbar_frame, text="管理登录", command=self.show_admin_login_dialog)
         self.login_btn.pack(side=tk.RIGHT, padx=(0, 0))
         
 
@@ -191,7 +191,41 @@ class PythonIDEClient:
         
         # 加载已安装包
         self.refresh_installed_packages()
-        
+
+    def create_users_tab(self):
+        """创建用户管理标签页"""
+        users_frame = ttk.Frame(self.notebook)
+        self.notebook.add(users_frame, text="用户管理")
+
+        # 工具栏
+        users_toolbar = ttk.Frame(users_frame)
+        users_toolbar.pack(fill=tk.X, padx=10, pady=5)
+
+        ttk.Button(users_toolbar, text="创建用户", command=self.show_create_user_dialog).pack(side=tk.LEFT, padx=(0, 5))
+        ttk.Button(users_toolbar, text="编辑用户", command=self.edit_selected_user).pack(side=tk.LEFT, padx=(0, 5))
+        ttk.Button(users_toolbar, text="删除用户", command=self.delete_selected_user).pack(side=tk.LEFT, padx=(0, 5))
+        ttk.Button(users_toolbar, text="设为管理员", command=self.make_user_admin).pack(side=tk.LEFT, padx=(0, 5))
+        ttk.Button(users_toolbar, text="取消管理员", command=self.remove_user_admin).pack(side=tk.LEFT, padx=(0, 5))
+
+        # 用户列表
+        users_list_frame = ttk.Frame(users_frame)
+        users_list_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
+
+        # 创建表格
+        columns = ("ID", "用户名", "管理员", "状态", "创建时间", "最后登录", "提交数")
+        self.users_tree = ttk.Treeview(users_list_frame, columns=columns, show="headings")
+
+        for col in columns:
+            self.users_tree.heading(col, text=col)
+            if col == "ID":
+                self.users_tree.column(col, width=50)
+            elif col in ["管理员", "状态"]:
+                self.users_tree.column(col, width=80)
+            elif col == "提交数":
+                self.users_tree.column(col, width=80)
+            else:
+                self.users_tree.column(col, width=150)
+
     def start_console_monitor(self):
         """启动控制台输出监控线程"""
         def monitor():
@@ -424,7 +458,89 @@ class PythonIDEClient:
                     self.root.after(3000, self.refresh_installed_packages)
             else:
                 messagebox.showwarning("警告", "不能卸载系统关键包")
-        
+
+    def show_admin_login_dialog(self):
+        """显示管理员登录对话框"""
+        dialog = tk.Toplevel(self.root)
+        dialog.title("管理员登录")
+        dialog.geometry("300x300")
+        dialog.transient(self.root)
+        dialog.grab_set()
+
+        # 居中显示
+        dialog.geometry("+%d+%d" % (self.root.winfo_rootx() + 500, self.root.winfo_rooty() + 200))
+
+        ttk.Label(dialog, text="管理员用户名:").pack(pady=10)
+        username_entry = ttk.Entry(dialog, width=30)
+        username_entry.pack(pady=5)
+
+        ttk.Label(dialog, text="密码:").pack(pady=(10, 0))
+        password_entry = ttk.Entry(dialog, width=30, show="*")
+        password_entry.pack(pady=5)
+
+        def login():
+            username = username_entry.get()
+            password = password_entry.get()
+
+            if not username or not password:
+                messagebox.showerror("错误", "用户名和密码不能为空")
+                return
+
+            try:
+                response = requests.post(f"{self.server_url}/login",
+                                         json={"username": username, "password": password})
+                data = response.json()
+
+                if data.get("success"):
+                    user_info = data.get("user", {})
+                    if not user_info.get("is_admin"):
+                        messagebox.showerror("错误", "该账号没有管理员权限")
+                        return
+
+                    self.token = data.get("token")
+                    self.current_admin = user_info
+                    self.status_label.config(text=f"管理员: {username}")
+                    self.login_btn.config(text="退出登录", command=self.logout)
+                    self.refresh_btn.config(state=tk.NORMAL)
+
+                    # 启用所有标签页
+                    for i in range(self.notebook.index("end")):
+                        self.notebook.tab(i, state="normal")
+
+                    messagebox.showinfo("成功", "管理员登录成功!")
+                    dialog.destroy()
+
+                    # 加载数据
+                    self.refresh_all_data()
+                else:
+                    messagebox.showerror("错误", data.get("message", "登录失败"))
+            except Exception as e:
+                messagebox.showerror("错误", f"连接服务器失败: {str(e)}")
+
+        ttk.Button(dialog, text="登录", command=login).pack(pady=20)
+
+        # 回车键登录
+        dialog.bind('<Return>', lambda e: login())
+        username_entry.focus()
+
+    def logout(self):
+        """退出登录"""
+        self.token = None
+        self.current_admin = None
+        self.status_label.config(text="未登录")
+        self.login_btn.config(text="管理员登录", command=self.show_login_dialog)
+        self.refresh_btn.config(state=tk.DISABLED)
+
+        # 禁用所有标签页除了第一个
+        for i in range(1, self.notebook.index("end")):
+            self.notebook.tab(i, state="disabled")
+
+        # 切换到第一个标签页
+        self.notebook.select(0)
+
+        messagebox.showinfo("提示", "已退出登录")
+
+
     # 以下是原有的方法，保持不变
     def show_login_dialog(self):
         dialog = tk.Toplevel(self.root)
