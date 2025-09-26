@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Python IDE - 后端系统</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; text-align: center; }
+        .login-form { margin: 20px auto; max-width: 300px; }
+        input { margin: 5px; padding: 8px; width: 100%; }
+        button { padding: 10px 20px; margin: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Python IDE 后端系统</h1>
+    <p>这是一个用于代码提交和管理的后端系统</p>
+
+    <div class="login-form">
+        <h3>管理员登录</h3>
+        <input type="text" id="username" placeholder="用户名" value="admin">
+        <input type="password" id="password" placeholder="密码" value="admin123">
+        <button onclick="login()">登录</button>
+    </div>
+
+    <p>普通用户请使用 Python IDE 客户端进行登录和操作</p>
+
+    <script>
+        async function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            const response = await fetch('/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                localStorage.setItem('token', data.token);
+                if (data.user.is_admin) {
+                    window.location.href = '/admin';
+                } else {
+                    alert('普通用户请使用客户端操作');
+                }
+            } else {
+                alert('登录失败: ' + data.message);
+            }
+        }
+    </script>
+</body>
+</html>

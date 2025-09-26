@@ -429,12 +429,12 @@ class PythonIDEClient:
     def show_login_dialog(self):
         dialog = tk.Toplevel(self.root)
         dialog.title("用户登录")
-        dialog.geometry("300x200")
+        dialog.geometry("300x400")
         dialog.transient(self.root)
         dialog.grab_set()
         
         # 居中显示
-        dialog.geometry("+%d+%d" % (self.root.winfo_rootx() + 50, self.root.winfo_rooty() + 50))
+        dialog.geometry("+%d+%d" % (self.root.winfo_rootx() + 500, self.root.winfo_rooty() + 200))
         
         ttk.Label(dialog, text="用户名:").pack(pady=10)
         username_entry = ttk.Entry(dialog, width=30)
@@ -478,12 +478,12 @@ class PythonIDEClient:
     def show_register_dialog(self):
         dialog = tk.Toplevel(self.root)
         dialog.title("用户注册")
-        dialog.geometry("300x250")
+        dialog.geometry("300x400")
         dialog.transient(self.root)
         dialog.grab_set()
         
         # 居中显示
-        dialog.geometry("+%d+%d" % (self.root.winfo_rootx() + 50, self.root.winfo_rooty() + 50))
+        dialog.geometry("+%d+%d" % (self.root.winfo_rootx() + 500, self.root.winfo_rooty() + 200))
         
         ttk.Label(dialog, text="用户名:").pack(pady=20)
         username_entry = ttk.Entry(dialog, width=30)
